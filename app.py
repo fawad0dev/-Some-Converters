@@ -98,7 +98,7 @@ def supported_formats():
 
 @app.route('/api/upload', methods=['POST'])
 def upload_file():
-    """Handle file upload"""
+    """Handle file upload (max 100MB)"""
     if 'file' not in request.files:
         return jsonify({'error': 'No file provided'}), 400
     
@@ -243,4 +243,7 @@ def health_check():
     return jsonify({'status': 'healthy', 'timestamp': time.time()})
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    import os
+    # Only enable debug mode if explicitly set via environment variable
+    debug_mode = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
+    app.run(debug=debug_mode, host='0.0.0.0', port=5000)

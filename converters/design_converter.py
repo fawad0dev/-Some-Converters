@@ -84,7 +84,9 @@ def convert_vector(input_file, output_file, target_format):
             # Create a placeholder image
             img = Image.new('RGB', (800, 600), 'white')
             draw = ImageDraw.Draw(img)
-            draw.text((400, 300), f"Converted from {Path(input_file).name}", fill='black', anchor='mm')
+            text = f"Converted from {Path(input_file).name}"
+            # Use basic text positioning for compatibility
+            draw.text((350, 300), text, fill='black')
             
             img.save(output_file, target_format.upper())
             return True

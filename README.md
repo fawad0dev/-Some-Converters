@@ -131,6 +131,12 @@ python app.py
 
 The application will be available at: `http://localhost:5000`
 
+**Note:** Debug mode is disabled by default for security. To enable it during development:
+```bash
+export FLASK_DEBUG=true
+python app.py
+```
+
 ### Production Mode
 For production deployment, use a WSGI server like Gunicorn:
 

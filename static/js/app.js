@@ -168,7 +168,7 @@ function selectFormat(format, button) {
 // Start conversion
 async function startConversion() {
     if (!selectedFormat || !conversionId) {
-        alert('Please select a target format');
+        showError('Please select a target format');
         return;
     }
     
