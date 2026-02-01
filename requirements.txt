@@ -1,5 +1,5 @@
 Flask==3.0.0
-Werkzeug==3.0.1
+Werkzeug==3.0.3
 Pillow==10.3.0
 psd-tools==1.9.31
 pypdf==3.17.4
