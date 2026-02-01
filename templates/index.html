@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Universal File Converter</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔄 Universal File Converter</h1>
+            <p class="subtitle">Convert any file format easily and securely</p>
+        </header>
+
+        <main>
+            <!-- Upload Section -->
+            <div id="upload-section" class="section active">
+                <div class="upload-area" id="upload-area">
+                    <div class="upload-icon">📁</div>
+                    <h2>Drop your file here</h2>
+                    <p>or click to browse</p>
+                    <input type="file" id="file-input" hidden>
+                    <button class="btn btn-primary" onclick="document.getElementById('file-input').click()">
+                        Choose File
+                    </button>
+                </div>
+                
+                <div class="supported-formats">
+                    <h3>Supported Formats</h3>
+                    <div class="format-grid">
+                        <div class="format-card">
+                            <span class="format-icon">🖼️</span>
+                            <span class="format-name">Images</span>
+                            <span class="format-types">PNG, JPG, WEBP, SVG, GIF</span>
+                        </div>
+                        <div class="format-card">
+                            <span class="format-icon">📄</span>
+                            <span class="format-name">Documents</span>
+                            <span class="format-types">PDF, DOCX, TXT</span>
+                        </div>
+                        <div class="format-card">
+                            <span class="format-icon">🎵</span>
+                            <span class="format-name">Audio</span>
+                            <span class="format-types">MP3, WAV, OGG, FLAC</span>
+                        </div>
+                        <div class="format-card">
+                            <span class="format-icon">🎬</span>
+                            <span class="format-name">Video</span>
+                            <span class="format-types">MP4, MKV, AVI, GIF</span>
+                        </div>
+                        <div class="format-card">
+                            <span class="format-icon">📊</span>
+                            <span class="format-name">Data</span>
+                            <span class="format-types">JSON, CSV, XML</span>
+                        </div>
+                        <div class="format-card">
+                            <span class="format-icon">🗜️</span>
+                            <span class="format-name">Archives</span>
+                            <span class="format-types">ZIP, TAR</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Conversion Section -->
+            <div id="conversion-section" class="section">
+                <div class="file-info">
+                    <div class="file-preview">
+                        <span class="file-icon">📄</span>
+                        <div class="file-details">
+                            <h3 id="file-name">filename.ext</h3>
+                            <p id="file-size">0 KB</p>
+                            <p id="file-category">Category: Unknown</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="conversion-options">
+                    <h3>Convert to:</h3>
+                    <div id="format-buttons" class="format-buttons">
+                        <!-- Format buttons will be added dynamically -->
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn btn-secondary" onclick="resetApp()">Cancel</button>
+                    <button class="btn btn-primary" id="convert-btn" onclick="startConversion()" disabled>
+                        Convert File
+                    </button>
+                </div>
+            </div>
+
+            <!-- Progress Section -->
+            <div id="progress-section" class="section">
+                <div class="progress-container">
+                    <div class="spinner"></div>
+                    <h3>Converting your file...</h3>
+                    <p id="progress-message">Please wait while we process your file</p>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress-fill"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Download Section -->
+            <div id="download-section" class="section">
+                <div class="success-container">
+                    <div class="success-icon">✅</div>
+                    <h2>Conversion Complete!</h2>
+                    <p id="output-info">Your file has been converted successfully</p>
+                    
+                    <div class="action-buttons">
+                        <button class="btn btn-primary" onclick="downloadFile()">
+                            Download File
+                        </button>
+                        <button class="btn btn-secondary" onclick="resetApp()">
+                            Convert Another File
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Error Section -->
+            <div id="error-section" class="section">
+                <div class="error-container">
+                    <div class="error-icon">❌</div>
+                    <h2>Conversion Failed</h2>
+                    <p id="error-message">An error occurred during conversion</p>
+                    
+                    <div class="action-buttons">
+                        <button class="btn btn-primary" onclick="resetApp()">
+                            Try Again
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>Powered by open-source tools: Pillow, FFmpeg, psd-tools, and more</p>
+            <p class="note">Files are automatically deleted after download for your privacy</p>
+        </footer>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
