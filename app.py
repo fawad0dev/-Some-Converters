@@ -64,7 +64,7 @@ def supported_formats():
         },
         'document': {
             'formats': ['pdf', 'docx', 'txt'],
-            'conversions': 'PDF ↔ DOCX, PDF → Images'
+            'conversions': 'PDF ↔ DOCX, PDF → Images (all pages extracted as separate files), TXT conversions'
         },
         'audio': {
             'formats': ['mp3', 'wav', 'ogg', 'flac'],
