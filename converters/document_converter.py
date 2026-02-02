@@ -93,17 +93,34 @@ def docx_to_pdf(input_file, output_file):
         return False
 
 def pdf_to_image(input_file, output_file, target_format):
-    """Convert PDF to image (first page)"""
+    """Convert PDF to images (all pages or first page only)"""
     try:
         from pdf2image import convert_from_path
         
-        # Convert first page to image
-        images = convert_from_path(input_file, first_page=1, last_page=1)
+        # Convert all pages to images
+        images = convert_from_path(input_file)
         
-        if images:
+        if not images:
+            return False
+        
+        # If only one page, save as single file
+        if len(images) == 1:
             images[0].save(output_file, target_format.upper())
             return True
-        return False
+        
+        # Multiple pages - save each page as separate file
+        output_dir = os.path.dirname(output_file)
+        base_name = os.path.splitext(os.path.basename(output_file))[0]
+        
+        output_files = []
+        for i, image in enumerate(images, 1):
+            page_output = os.path.join(output_dir, f"{base_name}_page_{i}.{target_format}")
+            image.save(page_output, target_format.upper())
+            output_files.append(page_output)
+        
+        # Return list of output files for batch handling
+        return output_files
+        
     except ImportError:
         # Fallback without pdf2image
         print("pdf2image not available, using basic conversion")

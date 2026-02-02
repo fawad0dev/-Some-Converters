@@ -6,6 +6,7 @@ import shutil
 from pathlib import Path
 import traceback
 import time
+import zipfile
 
 # Import conversion modules
 from converters import image_converter, document_converter, audio_converter
@@ -98,42 +99,66 @@ def supported_formats():
 
 @app.route('/api/upload', methods=['POST'])
 def upload_file():
-    """Handle file upload (max 100MB)"""
-    if 'file' not in request.files:
+    """Handle file upload (max 100MB) - supports single or multiple files"""
+    # Check if files were provided
+    if 'file' not in request.files and 'files' not in request.files:
         return jsonify({'error': 'No file provided'}), 400
     
-    file = request.files['file']
-    if file.filename == '':
+    # Handle both single file and multiple files
+    files_list = request.files.getlist('files') if 'files' in request.files else [request.files['file']]
+    
+    # Filter out empty filenames
+    files_list = [f for f in files_list if f.filename != '']
+    
+    if not files_list:
         return jsonify({'error': 'No file selected'}), 400
     
-    if not allowed_file(file.filename):
-        return jsonify({'error': 'File type not supported'}), 400
-    
-    # Generate unique ID for this conversion
+    # Generate unique ID for this conversion batch
     conversion_id = str(uuid.uuid4())
-    
-    # Save the uploaded file
-    filename = secure_filename(file.filename)
     upload_path = os.path.join(app.config['UPLOAD_FOLDER'], conversion_id)
     os.makedirs(upload_path, exist_ok=True)
     
-    file_path = os.path.join(upload_path, filename)
-    file.save(file_path)
+    uploaded_files = []
     
-    # Get file info
-    file_size = os.path.getsize(file_path)
-    file_category = get_file_category(filename)
+    # Process each file
+    for file in files_list:
+        if not allowed_file(file.filename):
+            return jsonify({'error': f'File type not supported: {file.filename}'}), 400
+        
+        filename = secure_filename(file.filename)
+        file_path = os.path.join(upload_path, filename)
+        file.save(file_path)
+        
+        # Get file info
+        file_size = os.path.getsize(file_path)
+        file_category = get_file_category(filename)
+        
+        uploaded_files.append({
+            'filename': filename,
+            'size': file_size,
+            'category': file_category
+        })
     
-    return jsonify({
-        'conversion_id': conversion_id,
-        'filename': filename,
-        'size': file_size,
-        'category': file_category
-    })
+    # Return info about uploaded files
+    if len(uploaded_files) == 1:
+        # Single file - backward compatibility
+        return jsonify({
+            'conversion_id': conversion_id,
+            'filename': uploaded_files[0]['filename'],
+            'size': uploaded_files[0]['size'],
+            'category': uploaded_files[0]['category']
+        })
+    else:
+        # Multiple files
+        return jsonify({
+            'conversion_id': conversion_id,
+            'files': uploaded_files,
+            'count': len(uploaded_files)
+        })
 
 @app.route('/api/convert', methods=['POST'])
 def convert_file():
-    """Handle file conversion"""
+    """Handle file conversion - supports single and batch conversion"""
     data = request.json
     conversion_id = data.get('conversion_id')
     target_format = data.get('target_format', '').lower()
@@ -141,7 +166,7 @@ def convert_file():
     if not conversion_id or not target_format:
         return jsonify({'error': 'Missing conversion_id or target_format'}), 400
     
-    # Find the uploaded file
+    # Find the uploaded files
     upload_path = os.path.join(app.config['UPLOAD_FOLDER'], conversion_id)
     if not os.path.exists(upload_path):
         return jsonify({'error': 'Upload not found'}), 404
@@ -150,59 +175,100 @@ def convert_file():
     if not files:
         return jsonify({'error': 'No file found'}), 404
     
-    input_file = os.path.join(upload_path, files[0])
-    input_filename = files[0]
-    
     # Create output directory
     output_path = os.path.join(app.config['CONVERTED_FOLDER'], conversion_id)
     os.makedirs(output_path, exist_ok=True)
     
-    # Generate output filename
-    base_name = os.path.splitext(input_filename)[0]
-    output_filename = f"{base_name}.{target_format}"
-    output_file = os.path.join(output_path, output_filename)
+    converted_files = []
+    errors = []
     
-    try:
-        # Determine conversion type and call appropriate converter
-        category = get_file_category(input_filename)
+    # Process each file
+    for input_filename in files:
+        input_file = os.path.join(upload_path, input_filename)
         
-        if category == 'image':
-            success = image_converter.convert(input_file, output_file, target_format)
-        elif category == 'document':
-            success = document_converter.convert(input_file, output_file, target_format)
-        elif category == 'audio':
-            success = audio_converter.convert(input_file, output_file, target_format)
-        elif category == 'video':
-            success = video_converter.convert(input_file, output_file, target_format)
-        elif category == '3d':
-            success = model_3d_converter.convert(input_file, output_file, target_format)
-        elif category == 'font':
-            success = font_converter.convert(input_file, output_file, target_format)
-        elif category == 'data':
-            success = data_converter.convert(input_file, output_file, target_format)
-        elif category == 'archive':
-            success = archive_converter.convert(input_file, output_file, target_format)
-        elif category == 'design':
-            success = design_converter.convert(input_file, output_file, target_format)
-        else:
-            return jsonify({'error': 'Unsupported file category'}), 400
+        # Generate output filename
+        base_name = os.path.splitext(input_filename)[0]
+        output_filename = f"{base_name}.{target_format}"
+        output_file = os.path.join(output_path, output_filename)
         
-        if not success:
-            return jsonify({'error': 'Conversion failed'}), 500
+        try:
+            # Determine conversion type and call appropriate converter
+            category = get_file_category(input_filename)
+            
+            success = False
+            if category == 'image':
+                success = image_converter.convert(input_file, output_file, target_format)
+            elif category == 'document':
+                # Handle PDF to images (multiple pages)
+                result = document_converter.convert(input_file, output_file, target_format)
+                if isinstance(result, list):
+                    # Multiple output files (e.g., PDF pages to images)
+                    converted_files.extend(result)
+                    continue
+                else:
+                    success = result
+            elif category == 'audio':
+                success = audio_converter.convert(input_file, output_file, target_format)
+            elif category == 'video':
+                success = video_converter.convert(input_file, output_file, target_format)
+            elif category == '3d':
+                success = model_3d_converter.convert(input_file, output_file, target_format)
+            elif category == 'font':
+                success = font_converter.convert(input_file, output_file, target_format)
+            elif category == 'data':
+                success = data_converter.convert(input_file, output_file, target_format)
+            elif category == 'archive':
+                success = archive_converter.convert(input_file, output_file, target_format)
+            elif category == 'design':
+                success = design_converter.convert(input_file, output_file, target_format)
+            else:
+                errors.append(f'{input_filename}: Unsupported file category')
+                continue
+            
+            if success and os.path.exists(output_file):
+                converted_files.append(output_file)
+            else:
+                errors.append(f'{input_filename}: Conversion failed')
         
-        # Get output file size
+        except Exception as e:
+            traceback.print_exc()
+            errors.append(f'{input_filename}: {str(e)}')
+    
+    if not converted_files:
+        return jsonify({'error': 'All conversions failed', 'details': errors}), 500
+    
+    # If multiple output files, create a ZIP
+    if len(converted_files) > 1:
+        zip_filename = f"converted_files.zip"
+        zip_path = os.path.join(output_path, zip_filename)
+        
+        with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            for file_path in converted_files:
+                zipf.write(file_path, os.path.basename(file_path))
+                # Remove individual files after adding to zip
+                os.remove(file_path)
+        
+        output_size = os.path.getsize(zip_path)
+        return jsonify({
+            'success': True,
+            'output_filename': zip_filename,
+            'output_size': output_size,
+            'conversion_id': conversion_id,
+            'files_converted': len(converted_files),
+            'errors': errors if errors else None
+        })
+    else:
+        # Single file output
+        output_file = converted_files[0]
         output_size = os.path.getsize(output_file)
         
         return jsonify({
             'success': True,
-            'output_filename': output_filename,
+            'output_filename': os.path.basename(output_file),
             'output_size': output_size,
-            'conversion_id': conversion_id
+            'conversion_id': conversion_id,
+            'errors': errors if errors else None
         })
-    
-    except Exception as e:
-        traceback.print_exc()
-        return jsonify({'error': f'Conversion error: {str(e)}'}), 500
 
 @app.route('/api/download/<conversion_id>', methods=['GET'])
 def download_file(conversion_id):

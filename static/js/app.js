@@ -1,12 +1,12 @@
 // Global state
-let currentFile = null;
+let currentFiles = [];
 let conversionId = null;
 let selectedFormat = null;
 
 // Format mappings for different categories
 const formatMappings = {
     'image': ['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp'],
-    'document': ['pdf', 'docx', 'txt'],
+    'document': ['pdf', 'docx', 'txt', 'png', 'jpg', 'jpeg'],
     'audio': ['mp3', 'wav', 'ogg', 'flac'],
     'video': ['mp4', 'mkv', 'avi', 'webm', 'gif'],
     '3d': ['obj', 'gltf', 'glb'],
@@ -58,7 +58,7 @@ function handleDrop(e) {
     const files = dt.files;
     
     if (files.length > 0) {
-        handleFileSelect(files[0]);
+        handleFileSelect(Array.from(files));
     }
 }
 
@@ -67,23 +67,27 @@ function setupFileInput() {
     const fileInput = document.getElementById('file-input');
     fileInput.addEventListener('change', (e) => {
         if (e.target.files.length > 0) {
-            handleFileSelect(e.target.files[0]);
+            handleFileSelect(Array.from(e.target.files));
         }
     });
 }
 
 // Handle file selection
-async function handleFileSelect(file) {
-    currentFile = file;
+async function handleFileSelect(files) {
+    currentFiles = files;
     
     // Show progress
     showSection('progress-section');
-    updateProgress('Uploading file...', 20);
+    updateProgress('Uploading files...', 20);
     
     try {
-        // Upload file
+        // Upload files
         const formData = new FormData();
-        formData.append('file', file);
+        
+        // Add all files to form data
+        files.forEach(file => {
+            formData.append('files', file);
+        });
         
         const response = await fetch('/api/upload', {
             method: 'POST',
@@ -99,10 +103,10 @@ async function handleFileSelect(file) {
         conversionId = data.conversion_id;
         
         // Update UI with file info
-        updateProgress('File uploaded successfully', 100);
+        updateProgress('Files uploaded successfully', 100);
         setTimeout(() => {
             displayFileInfo(data);
-            showConversionOptions(data.category);
+            showConversionOptions(data);
             showSection('conversion-section');
         }, 500);
         
@@ -114,30 +118,53 @@ async function handleFileSelect(file) {
 
 // Display file information
 function displayFileInfo(data) {
-    document.getElementById('file-name').textContent = data.filename;
-    document.getElementById('file-size').textContent = formatBytes(data.size);
-    document.getElementById('file-category').textContent = `Category: ${capitalizeFirst(data.category)}`;
+    const filesList = document.getElementById('files-list');
+    filesList.innerHTML = '';
     
-    // Set appropriate icon
-    const iconMap = {
-        'image': '🖼️',
-        'document': '📄',
-        'audio': '🎵',
-        'video': '🎬',
-        'data': '📊',
-        'archive': '🗜️',
-        'font': '🔤',
-        '3d': '🎮',
-        'design': '🎨'
-    };
+    // Check if single file or multiple files
+    const files = data.files || [{ filename: data.filename, size: data.size, category: data.category }];
     
-    document.querySelector('.file-icon').textContent = iconMap[data.category] || '📄';
+    files.forEach(fileData => {
+        const filePreview = document.createElement('div');
+        filePreview.className = 'file-preview';
+        
+        // Set appropriate icon
+        const iconMap = {
+            'image': '🖼️',
+            'document': '📄',
+            'audio': '🎵',
+            'video': '🎬',
+            'data': '📊',
+            'archive': '🗜️',
+            'font': '🔤',
+            '3d': '🎮',
+            'design': '🎨'
+        };
+        
+        filePreview.innerHTML = `
+            <span class="file-icon">${iconMap[fileData.category] || '📄'}</span>
+            <div class="file-details">
+                <h3 class="file-name">${fileData.filename}</h3>
+                <p class="file-size">${formatBytes(fileData.size)}</p>
+                <p class="file-category">Category: ${capitalizeFirst(fileData.category)}</p>
+            </div>
+        `;
+        
+        filesList.appendChild(filePreview);
+    });
 }
 
 // Show conversion options
-function showConversionOptions(category) {
+function showConversionOptions(data) {
     const formatButtons = document.getElementById('format-buttons');
     formatButtons.innerHTML = '';
+    
+    // Get category from single or multiple files
+    const category = data.category || (data.files && data.files.length > 0 ? data.files[0].category : null);
+    
+    if (!category) {
+        return;
+    }
     
     const formats = formatMappings[category] || [];
     
@@ -212,8 +239,19 @@ async function startConversion() {
 
 // Show download section
 function showDownloadSection(data) {
-    document.getElementById('output-info').textContent = 
-        `Your ${selectedFormat.toUpperCase()} file is ready (${formatBytes(data.output_size)})`;
+    const fileCount = data.files_converted || 1;
+    const message = fileCount > 1 
+        ? `Your ${fileCount} files are ready in a ZIP archive (${formatBytes(data.output_size)})`
+        : `Your ${selectedFormat.toUpperCase()} file is ready (${formatBytes(data.output_size)})`;
+    
+    document.getElementById('output-info').textContent = message;
+    
+    // Show warnings if any errors occurred
+    if (data.errors && data.errors.length > 0) {
+        const errorList = data.errors.join(', ');
+        document.getElementById('output-info').textContent += `\n\nNote: Some files had issues: ${errorList}`;
+    }
+    
     showSection('download-section');
 }
 
@@ -276,7 +314,7 @@ function resetApp() {
     }
     
     // Reset state
-    currentFile = null;
+    currentFiles = [];
     conversionId = null;
     selectedFormat = null;
     
