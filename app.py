@@ -239,7 +239,7 @@ def convert_file():
     
     # If multiple output files, create a ZIP
     if len(converted_files) > 1:
-        zip_filename = f"converted_files.zip"
+        zip_filename = f"converted_{conversion_id[:8]}.zip"
         zip_path = os.path.join(output_path, zip_filename)
         
         with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:

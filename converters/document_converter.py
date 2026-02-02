@@ -93,7 +93,7 @@ def docx_to_pdf(input_file, output_file):
         return False
 
 def pdf_to_image(input_file, output_file, target_format):
-    """Convert PDF to images (all pages or first page only)"""
+    """Convert PDF to images (all pages or first page only) - always returns list of files"""
     try:
         from pdf2image import convert_from_path
         
@@ -103,20 +103,21 @@ def pdf_to_image(input_file, output_file, target_format):
         if not images:
             return False
         
-        # If only one page, save as single file
-        if len(images) == 1:
-            images[0].save(output_file, target_format.upper())
-            return True
-        
-        # Multiple pages - save each page as separate file
         output_dir = os.path.dirname(output_file)
         base_name = os.path.splitext(os.path.basename(output_file))[0]
         
         output_files = []
-        for i, image in enumerate(images, 1):
-            page_output = os.path.join(output_dir, f"{base_name}_page_{i}.{target_format}")
-            image.save(page_output, target_format.upper())
-            output_files.append(page_output)
+        
+        # If only one page, save with original filename
+        if len(images) == 1:
+            images[0].save(output_file, target_format.upper())
+            output_files.append(output_file)
+        else:
+            # Multiple pages - save each page as separate file
+            for i, image in enumerate(images, 1):
+                page_output = os.path.join(output_dir, f"{base_name}_page_{i}.{target_format}")
+                image.save(page_output, target_format.upper())
+                output_files.append(page_output)
         
         # Return list of output files for batch handling
         return output_files

@@ -159,9 +159,17 @@ function showConversionOptions(data) {
     const formatButtons = document.getElementById('format-buttons');
     formatButtons.innerHTML = '';
     
-    // Get category from single or multiple files
-    const category = data.category || (data.files && data.files.length > 0 ? data.files[0].category : null);
+    // Get categories from uploaded files
+    const files = data.files || [{ category: data.category }];
+    const categories = [...new Set(files.map(f => f.category))];
     
+    // If mixed categories, show error
+    if (categories.length > 1) {
+        formatButtons.innerHTML = '<p style="color: #EF4444;">⚠️ Cannot convert files of different types together. Please upload files of the same category.</p>';
+        return;
+    }
+    
+    const category = categories[0];
     if (!category) {
         return;
     }
@@ -244,12 +252,17 @@ function showDownloadSection(data) {
         ? `Your ${fileCount} files are ready in a ZIP archive (${formatBytes(data.output_size)})`
         : `Your ${selectedFormat.toUpperCase()} file is ready (${formatBytes(data.output_size)})`;
     
-    document.getElementById('output-info').textContent = message;
+    const outputInfo = document.getElementById('output-info');
+    outputInfo.textContent = message;
     
     // Show warnings if any errors occurred
     if (data.errors && data.errors.length > 0) {
-        const errorList = data.errors.join(', ');
-        document.getElementById('output-info').textContent += `\n\nNote: Some files had issues: ${errorList}`;
+        const errorDiv = document.createElement('div');
+        errorDiv.style.marginTop = '10px';
+        errorDiv.style.color = '#EF4444';
+        errorDiv.innerHTML = '<strong>Note:</strong> Some files had issues:<br>' + 
+            data.errors.map(e => '• ' + e).join('<br>');
+        outputInfo.appendChild(errorDiv);
     }
     
     showSection('download-section');
