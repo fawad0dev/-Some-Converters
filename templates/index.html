@@ -18,11 +18,11 @@
             <div id="upload-section" class="section active">
                 <div class="upload-area" id="upload-area">
                     <div class="upload-icon">📁</div>
-                    <h2>Drop your file here</h2>
-                    <p>or click to browse</p>
-                    <input type="file" id="file-input" hidden>
+                    <h2>Drop your files here</h2>
+                    <p>or click to browse (supports multiple files)</p>
+                    <input type="file" id="file-input" multiple hidden>
                     <button class="btn btn-primary" onclick="document.getElementById('file-input').click()">
-                        Choose File
+                        Choose Files
                     </button>
                 </div>
                 
@@ -66,13 +66,8 @@
             <!-- Conversion Section -->
             <div id="conversion-section" class="section">
                 <div class="file-info">
-                    <div class="file-preview">
-                        <span class="file-icon">📄</span>
-                        <div class="file-details">
-                            <h3 id="file-name">filename.ext</h3>
-                            <p id="file-size">0 KB</p>
-                            <p id="file-category">Category: Unknown</p>
-                        </div>
+                    <div id="files-list" class="files-list">
+                        <!-- File list will be populated here -->
                     </div>
                 </div>
 
@@ -86,7 +81,7 @@
                 <div class="action-buttons">
                     <button class="btn btn-secondary" onclick="resetApp()">Cancel</button>
                     <button class="btn btn-primary" id="convert-btn" onclick="startConversion()" disabled>
-                        Convert File
+                        Convert Files
                     </button>
                 </div>
             </div>

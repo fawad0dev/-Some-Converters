@@ -6,7 +6,7 @@ A comprehensive web-based file converter supporting multiple file formats includ
 
 - **Multiple File Format Support**
   - 🖼️ **Images**: PNG, JPG, WEBP, SVG, GIF, BMP
-  - 📄 **Documents**: PDF ↔ DOCX, PDF → Images, TXT
+  - 📄 **Documents**: PDF ↔ DOCX, PDF → Images (all pages), TXT
   - 🎵 **Audio**: MP3, WAV, OGG, FLAC
   - 🎬 **Video**: MP4, MKV, AVI, WEBM, GIF
   - 🎮 **3D Models**: OBJ, GLTF, GLB
@@ -15,8 +15,13 @@ A comprehensive web-based file converter supporting multiple file formats includ
   - 🗜️ **Archives**: ZIP ↔ TAR
   - 🎨 **Design**: PSD → PNG/JPG, AI/EPS → SVG
 
+- **Batch Conversion**
+  - Upload and convert multiple files at once
+  - Automatic ZIP packaging for batch results
+  - PDF to multiple images (all pages extracted)
+
 - **User-Friendly Interface**
-  - Drag-and-drop file upload
+  - Drag-and-drop multiple file upload
   - Real-time conversion progress
   - One-click download
   - Automatic file cleanup
